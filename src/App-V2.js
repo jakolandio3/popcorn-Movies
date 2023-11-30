@@ -1,24 +1,68 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import StarRating from './StarRating.js';
-import { useMovies } from './useMovies.js';
-import { useLocalStorageState } from './useLocalSortageState.js';
-import { useKey } from './useKey.js';
+
+// const tempMovieData = [
+// 	{
+// 		imdbID: 'tt1375666',
+// 		Title: 'Inception',
+// 		Year: '2010',
+// 		Poster:
+// 			'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg',
+// 	},
+// 	{
+// 		imdbID: 'tt0133093',
+// 		Title: 'The Matrix',
+// 		Year: '1999',
+// 		Poster:
+// 			'https://m.media-amazon.com/images/M/MV5BNzQzOTk3OTAtNDQ0Zi00ZTVkLWI0MTEtMDllZjNkYzNjNTc4L2ltYWdlXkEyXkFqcGdeQXVyNjU0OTQ0OTY@._V1_SX300.jpg',
+// 	},
+// 	{
+// 		imdbID: 'tt6751668',
+// 		Title: 'Parasite',
+// 		Year: '2019',
+// 		Poster:
+// 			'https://m.media-amazon.com/images/M/MV5BYWZjMjk3ZTItODQ2ZC00NTY5LWE0ZDYtZTI3MjcwN2Q5NTVkXkEyXkFqcGdeQXVyODk4OTc3MTY@._V1_SX300.jpg',
+// 	},
+// ];
+
+// const tempWatchedData = [
+// 	{
+// 		imdbID: 'tt1375666',
+// 		Title: 'Inception',
+// 		Year: '2010',
+// 		Poster:
+// 			'https://m.media-amazon.com/images/M/MV5BMjAxMzY3NjcxNF5BMl5BanBnXkFtZTcwNTI5OTM0Mw@@._V1_SX300.jpg',
+// 		runtime: 148,
+// 		imdbRating: 8.8,
+// 		userRating: 10,
+// 	},
+// 	{
+// 		imdbID: 'tt0088763',
+// 		Title: 'Back to the Future',
+// 		Year: '1985',
+// 		Poster:
+// 			'https://m.media-amazon.com/images/M/MV5BZmU0M2Y1OGUtZjIxNi00ZjBkLTg1MjgtOWIyNThiZWIwYjRiXkEyXkFqcGdeQXVyMTQxNzMzNDI@._V1_SX300.jpg',
+// 		runtime: 116,
+// 		imdbRating: 8.5,
+// 		userRating: 9,
+// 	},
+// ];
 const KEY = '2c3d6c49';
+// OMBD key = 2c3d6c49
+// OMBD data request = http://www.omdbapi.com/?apikey=[yourkey]&
+// OMBD IMAGES = http://img.omdbapi.com/?apikey=[yourkey]&
+
 const average = (arr) =>
 	arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 // appp component would be classed as a structural component
 export default function App() {
+	const [movies, setMovies] = useState([]);
 	const [query, setQuery] = useState('');
-	// const [watched, setWatched] = useState(function () {
-	// 	const storedValue = localStorage.getItem('watched');
-	// 	return storedValue ? JSON.parse(storedValue) : [];
-	// });
-
-	const [watched, setWatched] = useLocalStorageState([], 'watched');
-
+	const [watched, setWatched] = useState([]);
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState('');
 	const [selectedId, setSelectedId] = useState(null);
 
-	const [movies, isLoading, error] = useMovies(query, handleCloseMovie);
 	// creating a function for getting the id of the movie you select
 	function handleSelectMovie(id) {
 		selectedId === id ? handleCloseMovie() : setSelectedId(id);
@@ -29,9 +73,6 @@ export default function App() {
 
 	function handleAddWatched(movie) {
 		setWatched((watched) => [...watched, movie]);
-		// local storage
-
-		// localStorage.setItem('watchedList', JSON.stringify([...watched, movie]));
 	}
 
 	function handleDeleteWatchedMovie(movie) {
@@ -40,6 +81,43 @@ export default function App() {
 		);
 	}
 	// use effect means it executes after the component has been rendered, it takes se second argument which says when it is executes, the empty array here means its only executed when it first mounts to the dom
+
+	useEffect(() => {
+		const controller = new AbortController();
+		async function fetchMovies() {
+			try {
+				setIsLoading(true);
+				setError('');
+				const res = await fetch(
+					`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+					{ signal: controller.signal }
+				);
+				if (!res.ok)
+					throw new Error('something went wrong with fetching the data');
+
+				const data = await res.json();
+
+				if (data.Response === 'False') throw new Error('no movie found');
+
+				setMovies(data.Search);
+			} catch (error) {
+				if (error.name !== 'AbortError') setError(error.message);
+			} finally {
+				setIsLoading(false);
+			}
+			if (!query.length) {
+				setMovies([]);
+				setError('');
+				return;
+			}
+		}
+		handleCloseMovie();
+		fetchMovies();
+
+		return function () {
+			controller.abort();
+		};
+	}, [query]);
 
 	return (
 		<>
@@ -102,33 +180,6 @@ function Navbar({ children }) {
 // stateful component
 // Search component
 function SearchBar({ query, setQuery }) {
-	const inputEl = useRef(null);
-
-	useKey('Enter', function () {
-		if (document.activeElement === inputEl.current) return;
-		inputEl.current.focus();
-		setQuery('');
-	});
-
-	// calling focus function on the input element as defined by useREF below its making a new state of the input element basically instead opf mutating the original dom element itself
-	// useEffect(() => {
-	// 	function callback(e) {
-	// 		if (document.activeElement === inputEl.current) return;
-	// 		if (e.code === 'Enter') {
-	// 			inputEl.current.focus();
-	// 			setQuery('');
-	// 		}
-	// 	}
-
-	// 	document.addEventListener('keypress', callback);
-	// 	return () => document.removeEventListener('keydown', callback);
-	// }, [setQuery]);
-	// useEffect(function () {
-	// 	const el = document.querySelector('.search');
-	// 	el.focus();
-	// }, []);
-	// using a ref instead of an effect
-
 	return (
 		<input
 			className='search'
@@ -136,7 +187,6 @@ function SearchBar({ query, setQuery }) {
 			placeholder='Search movies...'
 			value={query}
 			onChange={(e) => setQuery(e.target.value)}
-			ref={inputEl}
 		/>
 	);
 }
@@ -181,7 +231,29 @@ function Box({ children }) {
 		</div>
 	);
 }
+// // right hand side box
+// function WatchedBox() {
+// 	const [isOpen2, setIsOpen2] = useState(true);
+// 	const [watched, setWatched] = useState(tempWatchedData);
 
+// 	return (
+// 		<div className='box'>
+// 			<button
+// 				className='btn-toggle'
+// 				onClick={() => setIsOpen2((open) => !open)}
+// 			>
+// 				{isOpen2 ? '–' : '+'}
+// 			</button>
+// 			{isOpen2 && (
+// 				<>
+// 					<Summary watched={watched} />
+// 					<WatchedList watched={watched} />
+// 				</>
+// 			)}
+// 		</div>
+// 	);
+// }
+// movie list
 function MovieList({ movies, onSelectMovie }) {
 	return (
 		<ul className='list list-movies'>
@@ -217,15 +289,6 @@ function MovieDetails({
 	const [isLoading, setIsLoading] = useState(false);
 	const [userStarRating, setUserStarRating] = useState('');
 
-	const countRef = useRef(0);
-
-	useEffect(
-		function () {
-			if (userStarRating) countRef.current++;
-		},
-		[userStarRating]
-	);
-
 	const isWatched = watched.map((movies) => movies.imdbID).includes(selectedId);
 	const watchedUserRating = watched.find(
 		(movie) => movie.imdbID === selectedId
@@ -244,8 +307,6 @@ function MovieDetails({
 		Genre: genre,
 	} = movie;
 
-	// const [avgRating, setAvgRating] = useState(0);
-
 	function handleAdd() {
 		const newWatchedMovie = {
 			imdbID: selectedId,
@@ -255,27 +316,24 @@ function MovieDetails({
 			imdbRating: +imdbRating,
 			runtime: +runtime.split(' ').at(0),
 			userRating: userStarRating,
-			countRatingDecisions: countRef.current,
 		};
 		onAddWatched(newWatchedMovie);
 		onCloseMovieDetails();
-		// setAvgRating(+imdbRating);
-		// setAvgRating((avgRating) => (avgRating + userStarRating) / 2);
 	}
-	useKey('Escape', onCloseMovieDetails);
+
 	// adding an effect to listen to the esc key press to close modal on body
-	// useEffect(
-	// 	function () {
-	// 		function callback(e) {
-	// 			e.code === 'Escape' && onCloseMovieDetails();
-	// 		}
-	// 		document.addEventListener('keydown', callback);
-	// 		return function () {
-	// 			document.removeEventListener('keydown', callback);
-	// 		};
-	// 	},
-	// 	[onCloseMovieDetails]
-	// );
+	useEffect(
+		function () {
+			function callback(e) {
+				e.code === 'Escape' && onCloseMovieDetails();
+			}
+			document.addEventListener('keydown', callback);
+			return function () {
+				document.removeEventListener('keydown', callback);
+			};
+		},
+		[onCloseMovieDetails]
+	);
 
 	useEffect(
 		function () {
@@ -303,6 +361,7 @@ function MovieDetails({
 		},
 		[title]
 	);
+
 	return (
 		<div className='details'>
 			{isLoading ? (
@@ -347,7 +406,6 @@ function MovieDetails({
 								</p>
 							)}
 						</div>
-						{/* <p>{avgRating}</p> */}
 						<p>
 							<em>{plot}</em>
 						</p>
