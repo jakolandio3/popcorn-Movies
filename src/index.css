@@ -91,6 +91,7 @@ body {
 }
 
 .search {
+	margin-top: 0.5rem;
 	justify-self: center;
 	border: none;
 	padding: 1.1rem 1.6rem;
@@ -115,7 +116,7 @@ body {
 }
 
 .num-results {
-	justify-self: end;
+	justify-self: center;
 	font-size: 1.8rem;
 }
 
@@ -206,6 +207,26 @@ body {
 
 .btn-delete:hover {
 	background-color: var(--color-red-dark);
+}
+.btn-search {
+	position: flex;
+	justify-self: center;
+
+	padding: 5px;
+	margin-left: 3rem;
+	width: 50%;
+	border-radius: 20%;
+	border: none;
+	background-color: var(--color-background-100);
+	color: white;
+	font-size: 1.5rem;
+	font-weight: bold;
+	cursor: pointer;
+	transition: all 0.3s;
+}
+
+.btn-search:hover {
+	background-color: var(--color-background-500);
 }
 
 /* ******* */

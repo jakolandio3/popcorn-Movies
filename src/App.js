@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import StarRating from './StarRating.js';
 import { useMovies } from './useMovies.js';
 import { useLocalStorageState } from './useLocalSortageState.js';
@@ -13,6 +13,9 @@ export default function App() {
 	// 	const storedValue = localStorage.getItem('watched');
 	// 	return storedValue ? JSON.parse(storedValue) : [];
 	// });
+	const handleCloseMovie = useCallback(function () {
+		setSelectedId(null);
+	}, []);
 
 	const [watched, setWatched] = useLocalStorageState([], 'watched');
 
@@ -22,9 +25,6 @@ export default function App() {
 	// creating a function for getting the id of the movie you select
 	function handleSelectMovie(id) {
 		selectedId === id ? handleCloseMovie() : setSelectedId(id);
-	}
-	function handleCloseMovie() {
-		setSelectedId(null);
 	}
 
 	function handleAddWatched(movie) {
@@ -103,7 +103,10 @@ function Navbar({ children }) {
 // Search component
 function SearchBar({ query, setQuery }) {
 	const inputEl = useRef(null);
-
+	const [psuedoQuery, setpsuedoQuery] = useState('');
+	function sendRequest() {
+		setQuery(psuedoQuery);
+	}
 	useKey('Enter', function () {
 		if (document.activeElement === inputEl.current) return;
 		inputEl.current.focus();
@@ -130,14 +133,19 @@ function SearchBar({ query, setQuery }) {
 	// using a ref instead of an effect
 
 	return (
-		<input
-			className='search'
-			type='text'
-			placeholder='Search movies...'
-			value={query}
-			onChange={(e) => setQuery(e.target.value)}
-			ref={inputEl}
-		/>
+		<>
+			<input
+				className='search'
+				type='text'
+				placeholder='Search movies...'
+				value={psuedoQuery}
+				onChange={(e) => setpsuedoQuery(e.target.value)}
+				ref={inputEl}
+			/>
+			<button className='btn-search' onClick={sendRequest}>
+				Search
+			</button>
+		</>
 	);
 }
 // presentational component
