@@ -10,8 +10,10 @@
 
 # production
 /build
-
+/src/App-V1.js
+/src/App-V2.js
 # misc
+.env
 .DS_Store
 .env.local
 .env.development.local

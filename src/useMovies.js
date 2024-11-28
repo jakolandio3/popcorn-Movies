@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 
 export function useMovies(query, callback) {
-	const KEY = '2c3d6c49';
+	const KEY = process.env.REACT_APP_KEY;
+	const DATABASE = process.env.REACT_APP_DATABASE;
 	// OMBD key = 2c3d6c49
 	// OMBD data request = http://www.omdbapi.com/?apikey=[yourkey]&
 	// OMBD IMAGES = http://img.omdbapi.com/?apikey=[yourkey]&
@@ -14,10 +15,9 @@ export function useMovies(query, callback) {
 			try {
 				setIsLoading(true);
 				setError('');
-				const res = await fetch(
-					`https://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
-					{ signal: controller.signal }
-				);
+				const res = await fetch(`${DATABASE}/?apikey=${KEY}&s=${query}`, {
+					signal: controller.signal,
+				});
 				if (!res.ok)
 					throw new Error('something went wrong with fetching the data');
 
@@ -43,6 +43,6 @@ export function useMovies(query, callback) {
 		return function () {
 			controller.abort();
 		};
-	}, [query, callback]);
+	}, [query, callback, DATABASE, KEY]);
 	return [movies, isLoading, error];
 }

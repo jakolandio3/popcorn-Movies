@@ -3,7 +3,8 @@ import StarRating from './StarRating.js';
 import { useMovies } from './useMovies.js';
 import { useLocalStorageState } from './useLocalSortageState.js';
 import { useKey } from './useKey.js';
-const KEY = '2c3d6c49';
+const KEY = process.env.REACT_APP_KEY;
+const DATABASE = process.env.REACT_APP_DATABASE;
 const average = (arr) =>
 	arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 // appp component would be classed as a structural component
@@ -86,7 +87,7 @@ function Logo() {
 	return (
 		<div className='logo'>
 			<span role='img'>🍿</span>
-			<h1>usePopcorn</h1>
+			<h1>Popcorn-movies</h1>
 		</div>
 	);
 }
@@ -289,9 +290,7 @@ function MovieDetails({
 		function () {
 			async function getMovieDetails() {
 				setIsLoading(true);
-				const res = await fetch(
-					`http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
-				);
+				const res = await fetch(`${DATABASE}/?apikey=${KEY}&i=${selectedId}`);
 				const data = await res.json();
 				setMovie(data);
 				setIsLoading(false);
